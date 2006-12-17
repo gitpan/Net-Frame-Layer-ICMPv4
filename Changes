@@ -1,0 +1,11 @@
+Revision history for Perl extension Net::Frame::Layer::ICMPv4.
+
+1.02 Sun Dec 17 17:17:41 CET 2006
+   - UPDATE: all layers moved to Net::Frame::Layer::* namespace
+
+1.01 Thu Dec 14 19:37:43 CET 2006
+   - bugfix: there is no more Utils.pm in Net::Frame
+
+1.00 Sun Dec 10 17:48:36 CET 2006
+   - first public release
+
