@@ -1,14 +1,13 @@
 #
-# $Id: ICMPv4.pm,v 1.12 2006/12/17 16:16:51 gomor Exp $
+# $Id: ICMPv4.pm 49 2009-05-31 13:15:34Z gomor $
 #
 package Net::Frame::Layer::ICMPv4;
-use strict;
-use warnings;
+use strict; use warnings;
 
-our $VERSION = '1.02';
+our $VERSION = '1.03';
 
 use Net::Frame::Layer qw(:consts :subs);
-require Exporter;
+use Exporter;
 our @ISA = qw(Net::Frame::Layer Exporter);
 
 our %EXPORT_TAGS = (
@@ -80,21 +79,19 @@ our @AS = qw(
    type
    code
    checksum
-   icmpType
 );
 __PACKAGE__->cgBuildIndices;
 __PACKAGE__->cgBuildAccessorsScalar(\@AS);
 
 #no strict 'vars';
 
-use Carp;
-require Net::Frame::Layer::ICMPv4::AddressMask;
-require Net::Frame::Layer::ICMPv4::DestUnreach;
-require Net::Frame::Layer::ICMPv4::Echo;
-require Net::Frame::Layer::ICMPv4::Information;
-require Net::Frame::Layer::ICMPv4::Redirect;
-require Net::Frame::Layer::ICMPv4::TimeExceed;
-require Net::Frame::Layer::ICMPv4::Timestamp;
+use Net::Frame::Layer::ICMPv4::AddressMask;
+use Net::Frame::Layer::ICMPv4::DestUnreach;
+use Net::Frame::Layer::ICMPv4::Echo;
+use Net::Frame::Layer::ICMPv4::Information;
+use Net::Frame::Layer::ICMPv4::Redirect;
+use Net::Frame::Layer::ICMPv4::TimeExceed;
+use Net::Frame::Layer::ICMPv4::Timestamp;
 
 sub new {
    shift->SUPER::new(
@@ -133,31 +130,16 @@ sub match {
 sub getKey        { shift->layer }
 sub getKeyReverse { shift->layer }
 
-sub getLength {
-   my $self = shift;
-   my $len = 4;
-   if ($self->icmpType) {
-      $len += $self->icmpType->getLength;
-   }
-   $len;
-}
+sub getLength { 4 }
 
 sub pack {
    my $self = shift;
 
    my $raw = $self->SUPER::pack('CCn',
       $self->type, $self->code, $self->checksum,
-   ) or return undef;
+   ) or return;
 
-   if ($self->icmpType) {
-      $raw .= $self->icmpType->pack
-         or return undef;
-
-      $self->payload($self->icmpType->payload);
-      $self->icmpType->payload(undef);
-   }
-
-   $self->raw($raw);
+   return $self->raw($raw);
 }
 
 sub unpack {
@@ -165,70 +147,34 @@ sub unpack {
 
    my ($type, $code, $checksum, $payload) =
       $self->SUPER::unpack('CCn a*', $self->raw)
-         or return undef;
+         or return;
 
    $self->type($type);
    $self->code($code);
    $self->checksum($checksum);
 
-   if ($payload) {
-      if ($type eq NF_ICMPv4_TYPE_ECHO_REQUEST
-      ||  $type eq NF_ICMPv4_TYPE_ECHO_REPLY) {
-         $self->icmpType(Net::Frame::Layer::ICMPv4::Echo->new(raw => $payload));
-      }
-      elsif ($type eq NF_ICMPv4_TYPE_TIMESTAMP_REQUEST
-         ||  $type eq NF_ICMPv4_TYPE_TIMESTAMP_REPLY) {
-         $self->icmpType(Net::Frame::Layer::ICMPv4::Timestamp->new(
-            raw => $payload,
-         ));
-      }
-      elsif ($type eq NF_ICMPv4_TYPE_INFORMATION_REQUEST
-         ||  $type eq NF_ICMPv4_TYPE_INFORMATION_REPLY) {
-         $self->icmpType(Net::Frame::Layer::ICMPv4::Information->new(
-            raw => $payload,
-         ));
-      }
-      elsif ($type eq NF_ICMPv4_TYPE_ADDRESS_MASK_REQUEST
-         ||  $type eq NF_ICMPv4_TYPE_ADDRESS_MASK_REPLY) {
-         $self->icmpType(Net::Frame::Layer::ICMPv4::AddressMask->new(
-            raw => $payload,
-         ));
-      }
-      elsif ($type eq NF_ICMPv4_TYPE_DESTUNREACH) {
-         $self->icmpType(Net::Frame::Layer::ICMPv4::DestUnreach->new(
-            raw => $payload,
-         ));
-      }
-      elsif ($type eq NF_ICMPv4_TYPE_REDIRECT) {
-         $self->icmpType(Net::Frame::Layer::ICMPv4::Redirect->new(
-            raw => $payload,
-         ));
-      }
-      elsif ($type eq NF_ICMPv4_TYPE_TIMEEXCEED) {
-         $self->icmpType(Net::Frame::Layer::ICMPv4::TimeExceed->new(
-            raw => $payload,
-         ));
-      }
-      $self->icmpType->unpack;
-      if ($self->icmpType->payload) {
-         $self->payload($self->icmpType->payload);
-         $self->icmpType->payload(undef);
-      }
-   }
+   $self->payload($payload);
 
-   $self;
+   return $self;
 }
 
 sub computeChecksums {
    my $self = shift;
+   my ($layers) = @_;
+
+   my $icmpType;
+   for my $l (@$layers) {
+      if ($l->layer =~ /ICMPv4::/) { $icmpType = $l; last; }
+   }
 
    my $packed = $self->SUPER::pack('CCna*',
-      $self->type, $self->code, 0, $self->icmpType->pack,
-   ) or return undef;
+      $self->type, $self->code, 0, $icmpType->pack,
+   ) or return;
 
-   $self->checksum(inetChecksum($packed));
+   my $payload = $layers->[-1]->payload || '';
+   $self->checksum(inetChecksum($packed.$payload));
 
-   1;
+   return 1;
 }
 
 sub encapsulate {
@@ -241,7 +187,36 @@ sub encapsulate {
       if ($type eq NF_ICMPv4_TYPE_DESTUNREACH
       ||  $type eq NF_ICMPv4_TYPE_REDIRECT
       ||  $type eq NF_ICMPv4_TYPE_TIMEEXCEED) {
+         my $pLen = length($self->payload);
+         if ($pLen < 40) {
+            $self->payload($self->payload.("\x00" x (40 - $pLen)));
+         }
          return 'IPv4';
+      }
+      elsif ($type eq NF_ICMPv4_TYPE_ECHO_REQUEST
+      ||     $type eq NF_ICMPv4_TYPE_ECHO_REPLY) {
+         return 'ICMPv4::Echo';
+      }
+      elsif ($type eq NF_ICMPv4_TYPE_TIMESTAMP_REQUEST
+         ||  $type eq NF_ICMPv4_TYPE_TIMESTAMP_REPLY) {
+         return 'ICMPv4::Timestamp';
+      }
+      elsif ($type eq NF_ICMPv4_TYPE_INFORMATION_REQUEST
+         ||  $type eq NF_ICMPv4_TYPE_INFORMATION_REPLY) {
+         return 'ICMPv4::Information';
+      }
+      elsif ($type eq NF_ICMPv4_TYPE_ADDRESS_MASK_REQUEST
+         ||  $type eq NF_ICMPv4_TYPE_ADDRESS_MASK_REPLY) {
+         return 'ICMPv4::AddressMask';
+      }
+      elsif ($type eq NF_ICMPv4_TYPE_DESTUNREACH) {
+         return 'ICMPv4::DestUnreach';
+      }
+      elsif ($type eq NF_ICMPv4_TYPE_REDIRECT) {
+         return 'ICMPv4::Redirect';
+      }
+      elsif ($type eq NF_ICMPv4_TYPE_TIMEEXCEED) {
+         return 'ICMPv4::TimeExceed';
       }
    }
 
@@ -255,11 +230,7 @@ sub print {
    my $buf = sprintf "$l: type:%d  code:%d  checksum:0x%04x",
       $self->type, $self->code, $self->checksum;
 
-   if ($self->icmpType) {
-      $buf .= "\n".$self->icmpType->print;
-   }
-
-   $buf;
+   return $buf;
 }
 
 1;
@@ -272,6 +243,7 @@ Net::Frame::Layer::ICMPv4 - Internet Control Message Protocol v4 layer object
 
 =head1 SYNOPSIS
 
+   use Net::Frame::Simple;
    use Net::Frame::Layer::ICMPv4 qw(:consts);
 
    my $icmp = Net::Frame::Layer::ICMPv4->new(
@@ -282,40 +254,55 @@ Net::Frame::Layer::ICMPv4 - Internet Control Message Protocol v4 layer object
 
    # Build an ICMPv4 echo-request
    use Net::Frame::Layer::ICMPv4::Echo;
-   my $echo = Net::Frame::Layer::ICMPv4::Echo->new(payload => 'echo');
-   $icmp->icmpType($echo);
-   $icmp->pack;
+   my $echo = Net::Frame::Layer::ICMPv4::Echo->new(
+      payload => 'echo'
+   );
 
-   print $icmp->print."\n";
+   my $echoReq = Net::Frame::Simple->new(
+      layers => [ $icmp, $echo ]
+   );
+   print $echoReq->print."\n";
 
    # Build an information-request
    use Net::Frame::Layer::ICMPv4::Information;
-   my $info = Net::Frame::Layer::ICMPv4::Information->new(payload => 'info');
+   my $info = Net::Frame::Layer::ICMPv4::Information->new(
+      payload => 'info'
+   );
    $icmp->type(NF_ICMPv4_TYPE_INFORMATION_REQUEST);
-   $icmp->icmpType($info);
-   $icmp->pack;
 
-   print $icmp->print."\n";
+   my $infoReq = Net::Frame::Simple->new(
+      layers => [ $icmp, $info ]
+   );
+   print $infoReq->print."\n";
 
    # Build an address-mask request
    use Net::Frame::Layer::ICMPv4::AddressMask;
-   my $mask = Net::Frame::Layer::ICMPv4::AddressMask->new(payload => 'mask');
+   my $mask = Net::Frame::Layer::ICMPv4::AddressMask->new(
+      payload => 'mask'
+   );
    $icmp->type(NF_ICMPv4_TYPE_ADDRESS_MASK_REQUEST);
-   $icmp->icmpType($mask);
-   $icmp->pack;
 
-   print $icmp->print."\n";
+   my $maskReq = Net::Frame::Simple->new(
+      layers => [ $icmp, $mask ]
+   );
+   print $maskReq->print."\n";
 
    # Build a timestamp request
    use Net::Frame::Layer::ICMPv4::Timestamp;
-   my $timestamp = Net::Frame::Layer::ICMPv4::Timestamp->new(payload => 'time');
+   my $timestamp = Net::Frame::Layer::ICMPv4::Timestamp->new(
+      payload => 'time'
+   );
    $icmp->type(NF_ICMPv4_TYPE_TIMESTAMP_REQUEST);
-   $icmp->icmpType($timestamp);
-   $icmp->pack;
 
-   print $icmp->print."\n";
+   my $timestampReq = Net::Frame::Simple->new(
+      layers => [ $icmp, $timestamp ]
+   );
+   print $timestampReq->print."\n";
 
+   #
    # Read a raw layer
+   #
+
    my $layer = Net::Frame::Layer::ICMPv4->new(raw => $raw);
 
    print $layer->print."\n";
@@ -343,10 +330,6 @@ Type and code fields. See B<CONSTANTS>.
 =item B<checksum>
 
 The checksum of ICMPv4 header.
-
-=item B<icmpType>
-
-A pointer to a B<Net::Frame::Layer::ICMPv4::*> layer.
 
 =back
 
@@ -500,7 +483,7 @@ Patrice E<lt>GomoRE<gt> Auffret
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2006, Patrice E<lt>GomoRE<gt> Auffret
+Copyright (c) 2006-2009, Patrice E<lt>GomoRE<gt> Auffret
 
 You may distribute this module under the terms of the Artistic license.
 See LICENSE.Artistic file in the source distribution archive.

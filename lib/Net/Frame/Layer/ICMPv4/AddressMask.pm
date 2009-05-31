@@ -1,9 +1,8 @@
 #
-# $Id: AddressMask.pm,v 1.1 2006/12/17 16:17:03 gomor Exp $
+# $Id: AddressMask.pm 49 2009-05-31 13:15:34Z gomor $
 #
 package Net::Frame::Layer::ICMPv4::AddressMask;
-use strict;
-use warnings;
+use strict; use warnings;
 
 use Net::Frame::Layer qw(:consts :subs);
 our @ISA = qw(Net::Frame::Layer);
@@ -16,33 +15,25 @@ our @AS = qw(
 __PACKAGE__->cgBuildIndices;
 __PACKAGE__->cgBuildAccessorsScalar(\@AS);
 
-#no strict 'vars';
-
-use Carp;
-
 sub new {
    shift->SUPER::new(
       identifier     => getRandom16bitsInt(),
       sequenceNumber => getRandom16bitsInt(),
       addressMask    => '0.0.0.0',
-      payload        => '',
       @_,
    );
 }
 
-sub getPayloadLength { shift->SUPER::getPayloadLength }
-
-sub getLength { 8 + shift->getPayloadLength }
+sub getLength { 8 }
 
 sub pack {
    my $self = shift;
 
-   $self->raw($self->SUPER::pack('nna4 a*',
+   $self->raw($self->SUPER::pack('nna4',
       $self->identifier, $self->sequenceNumber, inetAton($self->addressMask),
-      $self->payload,
-   )) or return undef;
+   )) or return;
 
-   $self->raw;
+   return $self->raw;
 }
 
 sub unpack {
@@ -50,14 +41,14 @@ sub unpack {
 
    my ($identifier, $sequenceNumber, $addressMask, $payload) =
       $self->SUPER::unpack('nna4 a*', $self->raw)
-         or return undef;
+         or return;
 
    $self->identifier($identifier);
    $self->sequenceNumber($sequenceNumber);
    $self->addressMask(inetNtoa($addressMask));
    $self->payload($payload);
 
-   $self;
+   return $self;
 }
 
 sub print {
@@ -185,7 +176,7 @@ Patrice E<lt>GomoRE<gt> Auffret
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2006, Patrice E<lt>GomoRE<gt> Auffret
+Copyright (c) 2006-2009, Patrice E<lt>GomoRE<gt> Auffret
 
 You may distribute this module under the terms of the Artistic license.
 See LICENSE.Artistic file in the source distribution archive.

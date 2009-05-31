@@ -1,14 +1,14 @@
 --- #YAML:1.0
 name:                Net-Frame-Layer-ICMPv4
-version:             1.02
+version:             1.03
 abstract:            Internet Control Message Protocol v4 layer object
-license:             Artistic
-generated_by:        ExtUtils::MakeMaker version 6.31
+license:             artistic
+author:              
+    - GomoR <gomor-cpan_at_gomor.org>
+generated_by:        ExtUtils::MakeMaker version 6.42
 distribution_type:   module
 requires:     
     Net::Frame:                    0
 meta-spec:
-    url:     http://module-build.sourceforge.net/META-spec-v1.2.html
-    version: 1.2
-author:
-    - GomoR <perl@gomor.org>
+    url:     http://module-build.sourceforge.net/META-spec-v1.3.html
+    version: 1.3

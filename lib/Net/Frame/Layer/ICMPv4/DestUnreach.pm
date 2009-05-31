@@ -1,9 +1,8 @@
 #
-# $Id: DestUnreach.pm,v 1.1 2006/12/17 16:17:03 gomor Exp $
+# $Id: DestUnreach.pm 49 2009-05-31 13:15:34Z gomor $
 #
 package Net::Frame::Layer::ICMPv4::DestUnreach;
-use strict;
-use warnings;
+use strict; use warnings;
 
 use Net::Frame::Layer qw(:consts);
 our @ISA = qw(Net::Frame::Layer);
@@ -14,29 +13,22 @@ our @AS = qw(
 __PACKAGE__->cgBuildIndices;
 __PACKAGE__->cgBuildAccessorsScalar(\@AS);
 
-#no strict 'vars';
-
-use Carp;
-
 sub new {
    shift->SUPER::new(
       unused  => 0,
-      payload => '',
       @_,
    );
 }
 
-sub getPayloadLength { shift->SUPER::getPayloadLength }
-
-sub getLength { 4 + shift->getPayloadLength }
+sub getLength { 4 }
 
 sub pack {
    my $self = shift;
 
-   $self->raw($self->SUPER::pack('N a*', $self->unused, $self->payload))
-      or return undef;
+   $self->raw($self->SUPER::pack('N', $self->unused))
+      or return;
 
-   $self->raw;
+   return $self->raw;
 }
 
 sub unpack {
@@ -48,7 +40,7 @@ sub unpack {
    $self->unused($unused);
    $self->payload($payload);
 
-   $self;
+   return $self;
 }
 
 sub print {
@@ -165,7 +157,7 @@ Patrice E<lt>GomoRE<gt> Auffret
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2006, Patrice E<lt>GomoRE<gt> Auffret
+Copyright (c) 2006-2009, Patrice E<lt>GomoRE<gt> Auffret
 
 You may distribute this module under the terms of the Artistic license.
 See LICENSE.Artistic file in the source distribution archive.

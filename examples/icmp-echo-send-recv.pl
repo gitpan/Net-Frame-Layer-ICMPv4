@@ -20,12 +20,11 @@ my $ip = Net::Frame::Layer::IPv4->new(
    dst      => $target,
    protocol => NF_IPv4_PROTOCOL_ICMPv4,
 );
-my $icmp = Net::Frame::Layer::ICMPv4->new(
-   icmpType => Net::Frame::Layer::ICMPv4::Echo->new(payload => 'test'),
-);
+my $icmp = Net::Frame::Layer::ICMPv4->new;
+my $echo = Net::Frame::Layer::ICMPv4::Echo->new(payload => 'test');
 
 my $oSimple = Net::Frame::Simple->new(
-   layers => [ $ip, $icmp, ],
+   layers => [ $ip, $icmp, $echo, ],
 );
 print $oSimple->print."\n";
 

@@ -1,5 +1,15 @@
 Revision history for Perl extension Net::Frame::Layer::ICMPv4.
 
+1.03 Sun May 31 15:21:07 CEST 2009
+   - UPDATE: payload is no more an attribute in ICMPv4 modules, it is 
+             handled in a generic way like any other layer
+   - UPDATE: icmpType is no more an attribute in ICMPv4 module, it is 
+             handled in a generic way like any other layer
+   - REMOVED: getPayloadLength() functions
+   - update: computeChecksum() and computeLengths() to reflect new computation 
+             scheme from Net::Frame::Simple
+   - update: copyright notice
+
 1.02 Sun Dec 17 17:17:41 CET 2006
    - UPDATE: all layers moved to Net::Frame::Layer::* namespace
 

@@ -1,9 +1,8 @@
 #
-# $Id: Timestamp.pm,v 1.1 2006/12/17 16:17:03 gomor Exp $
+# $Id: Timestamp.pm 49 2009-05-31 13:15:34Z gomor $
 #
 package Net::Frame::Layer::ICMPv4::Timestamp;
-use strict;
-use warnings;
+use strict; use warnings;
 
 use Net::Frame::Layer qw(:consts :subs);
 our @ISA = qw(Net::Frame::Layer);
@@ -18,10 +17,6 @@ our @AS = qw(
 __PACKAGE__->cgBuildIndices;
 __PACKAGE__->cgBuildAccessorsScalar(\@AS);
 
-#no strict 'vars';
-
-use Carp;
-
 sub new {
    shift->SUPER::new(
       identifier         => getRandom16bitsInt(),
@@ -29,24 +24,21 @@ sub new {
       originateTimestamp => time(),
       receiveTimestamp   => 0,
       transmitTimestamp  => 0,
-      payload            => '',
       @_,
    );
 }
 
-sub getPayloadLength { shift->SUPER::getPayloadLength }
-
-sub getLength { 16 + shift->getPayloadLength }
+sub getLength { 16 }
 
 sub pack {
    my $self = shift;
 
-   $self->raw($self->SUPER::pack('nnNNN a*',
+   $self->raw($self->SUPER::pack('nnNNN',
       $self->identifier, $self->sequenceNumber, $self->originateTimestamp,
-      $self->receiveTimestamp, $self->transmitTimestamp, $self->payload,
-   )) or return undef;
+      $self->receiveTimestamp, $self->transmitTimestamp,
+   )) or return;
 
-   $self->raw;
+   return $self->raw;
 }
 
 sub unpack {
@@ -55,7 +47,7 @@ sub unpack {
    my ($identifier, $sequenceNumber, $originateTimestamp, $receiveTimestamp,
       $transmitTimestamp, $payload)
          = $self->SUPER::unpack('nnNNN a*', $self->raw)
-            or return undef;
+            or return;
 
    $self->identifier($identifier);
    $self->sequenceNumber($sequenceNumber);
@@ -64,7 +56,7 @@ sub unpack {
    $self->transmitTimestamp($transmitTimestamp);
    $self->payload($payload);
 
-   $self;
+   return $self;
 }
 
 sub print {
@@ -201,7 +193,7 @@ Patrice E<lt>GomoRE<gt> Auffret
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2006, Patrice E<lt>GomoRE<gt> Auffret
+Copyright (c) 2006-2009, Patrice E<lt>GomoRE<gt> Auffret
 
 You may distribute this module under the terms of the Artistic license.
 See LICENSE.Artistic file in the source distribution archive.

@@ -11,11 +11,11 @@ my $ip = Net::Frame::Layer::IPv4->new(protocol => NF_IPv4_PROTOCOL_ICMPv4);
 
 my $icmp = Net::Frame::Layer::ICMPv4->new(
    type     => NF_ICMPv4_TYPE_ADDRESS_MASK_REQUEST,
-   icmpType => Net::Frame::Layer::ICMPv4::AddressMask->new(payload => 'test'),
 );
+my $type = Net::Frame::Layer::ICMPv4::AddressMask->new(payload => 'test');
 
 my $oSimple = Net::Frame::Simple->new(
-   layers => [ $ip, $icmp, ],
+   layers => [ $ip, $icmp, $type, ],
 );
 print $oSimple->print."\n";
 print unpack('H*', $oSimple->raw)."\n";

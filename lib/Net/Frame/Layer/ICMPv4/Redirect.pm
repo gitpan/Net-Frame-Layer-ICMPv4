@@ -1,9 +1,8 @@
 #
-# $Id: Redirect.pm,v 1.1 2006/12/17 16:17:03 gomor Exp $
+# $Id: Redirect.pm 49 2009-05-31 13:15:34Z gomor $
 #
 package Net::Frame::Layer::ICMPv4::Redirect;
-use strict;
-use warnings;
+use strict; use warnings;
 
 use Net::Frame::Layer qw(:consts :subs);
 our @ISA = qw(Net::Frame::Layer);
@@ -14,42 +13,34 @@ our @AS = qw(
 __PACKAGE__->cgBuildIndices;
 __PACKAGE__->cgBuildAccessorsScalar(\@AS);
 
-#no strict 'vars';
-
-use Carp;
-
 sub new {
    shift->SUPER::new(
       gateway => '127.0.0.1',
-      payload => '',
       @_,
    );
 }
 
-sub getPayloadLength { shift->SUPER::getPayloadLength }
-
-sub getLength { 4 + shift->getPayloadLength }
+sub getLength { 4 }
 
 sub pack {
    my $self = shift;
 
-   $self->raw($self->SUPER::pack('a4 a*',
-      inetAton($self->gateway), $self->payload,
-   )) or return undef;
+   $self->raw($self->SUPER::pack('a4', inetAton($self->gateway)))
+      or return;
 
-   $self->raw;
+   return $self->raw;
 }
 
 sub unpack {
    my $self = shift;
 
    my ($gateway, $payload) = $self->SUPER::unpack('a4 a*', $self->raw)
-      or return undef;
+      or return;
 
    $self->gateway(inetNtoa($gateway));
    $self->payload($payload);
 
-   $self;
+   return $self;
 }
 
 sub print {
@@ -166,7 +157,7 @@ Patrice E<lt>GomoRE<gt> Auffret
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2006, Patrice E<lt>GomoRE<gt> Auffret
+Copyright (c) 2006-2009, Patrice E<lt>GomoRE<gt> Auffret
 
 You may distribute this module under the terms of the Artistic license.
 See LICENSE.Artistic file in the source distribution archive.
