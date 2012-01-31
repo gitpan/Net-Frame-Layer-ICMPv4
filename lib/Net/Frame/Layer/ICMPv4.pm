@@ -1,10 +1,10 @@
 #
-# $Id: ICMPv4.pm 49 2009-05-31 13:15:34Z gomor $
+# $Id: ICMPv4.pm 53 2012-01-31 20:27:06Z gomor $
 #
 package Net::Frame::Layer::ICMPv4;
 use strict; use warnings;
 
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 use Net::Frame::Layer qw(:consts :subs);
 use Exporter;
@@ -83,8 +83,6 @@ our @AS = qw(
 __PACKAGE__->cgBuildIndices;
 __PACKAGE__->cgBuildAccessorsScalar(\@AS);
 
-#no strict 'vars';
-
 use Net::Frame::Layer::ICMPv4::AddressMask;
 use Net::Frame::Layer::ICMPv4::DestUnreach;
 use Net::Frame::Layer::ICMPv4::Echo;
@@ -94,12 +92,14 @@ use Net::Frame::Layer::ICMPv4::TimeExceed;
 use Net::Frame::Layer::ICMPv4::Timestamp;
 
 sub new {
-   shift->SUPER::new(
+   my $self = shift->SUPER::new(
       type     => NF_ICMPv4_TYPE_ECHO_REQUEST,
       code     => NF_ICMPv4_CODE_ZERO,
       checksum => 0,
       @_,
    );
+
+   return $self;
 }
 
 sub match {
@@ -184,17 +184,8 @@ sub encapsulate {
 
    if ($self->payload) {
       my $type = $self->type;
-      if ($type eq NF_ICMPv4_TYPE_DESTUNREACH
-      ||  $type eq NF_ICMPv4_TYPE_REDIRECT
-      ||  $type eq NF_ICMPv4_TYPE_TIMEEXCEED) {
-         my $pLen = length($self->payload);
-         if ($pLen < 40) {
-            $self->payload($self->payload.("\x00" x (40 - $pLen)));
-         }
-         return 'IPv4';
-      }
-      elsif ($type eq NF_ICMPv4_TYPE_ECHO_REQUEST
-      ||     $type eq NF_ICMPv4_TYPE_ECHO_REPLY) {
+      if ($type eq NF_ICMPv4_TYPE_ECHO_REQUEST
+      ||  $type eq NF_ICMPv4_TYPE_ECHO_REPLY) {
          return 'ICMPv4::Echo';
       }
       elsif ($type eq NF_ICMPv4_TYPE_TIMESTAMP_REQUEST
@@ -220,7 +211,7 @@ sub encapsulate {
       }
    }
 
-   NF_LAYER_NONE;
+   return NF_LAYER_NONE;
 }
 
 sub print {
@@ -483,7 +474,7 @@ Patrice E<lt>GomoRE<gt> Auffret
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2006-2009, Patrice E<lt>GomoRE<gt> Auffret
+Copyright (c) 2006-2012, Patrice E<lt>GomoRE<gt> Auffret
 
 You may distribute this module under the terms of the Artistic license.
 See LICENSE.Artistic file in the source distribution archive.

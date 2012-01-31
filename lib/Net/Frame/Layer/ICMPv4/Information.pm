@@ -1,5 +1,5 @@
 #
-# $Id: Information.pm 49 2009-05-31 13:15:34Z gomor $
+# $Id: Information.pm 53 2012-01-31 20:27:06Z gomor $
 #
 package Net::Frame::Layer::ICMPv4::Information;
 use strict; use warnings;
@@ -168,7 +168,7 @@ Patrice E<lt>GomoRE<gt> Auffret
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2006-2009, Patrice E<lt>GomoRE<gt> Auffret
+Copyright (c) 2006-2012, Patrice E<lt>GomoRE<gt> Auffret
 
 You may distribute this module under the terms of the Artistic license.
 See LICENSE.Artistic file in the source distribution archive.

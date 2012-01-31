@@ -1,5 +1,5 @@
 #
-# $Id: TimeExceed.pm 49 2009-05-31 13:15:34Z gomor $
+# $Id: TimeExceed.pm 53 2012-01-31 20:27:06Z gomor $
 #
 package Net::Frame::Layer::ICMPv4::TimeExceed;
 use strict; use warnings;
@@ -13,15 +13,13 @@ our @AS = qw(
 __PACKAGE__->cgBuildIndices;
 __PACKAGE__->cgBuildAccessorsScalar(\@AS);
 
-#no strict 'vars';
-
-use Carp;
-
 sub new {
-   shift->SUPER::new(
+   my $self = shift->SUPER::new(
       unused => 0,
       @_,
    );
+
+   return $self;
 }
 
 sub getLength { 4 }
@@ -47,11 +45,27 @@ sub unpack {
    return $self;
 }
 
+sub encapsulate {
+   my $self = shift;
+
+   return $self->nextLayer if $self->nextLayer;
+
+   if ($self->payload) {
+      my $pLen = length($self->payload);
+      if ($pLen < 40) {
+         $self->payload($self->payload.("\x00" x (40 - $pLen)));
+      }
+      return 'IPv4';
+   }
+
+   return NF_LAYER_NONE;
+}
+
 sub print {
    my $self = shift;
 
    my $l = $self->layer;
-   sprintf "$l: unused:%d", $self->unused;
+   return sprintf "$l: unused:%d", $self->unused;
 }
 
 1;
@@ -161,7 +175,7 @@ Patrice E<lt>GomoRE<gt> Auffret
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2006-2009, Patrice E<lt>GomoRE<gt> Auffret
+Copyright (c) 2006-2012, Patrice E<lt>GomoRE<gt> Auffret
 
 You may distribute this module under the terms of the Artistic license.
 See LICENSE.Artistic file in the source distribution archive.
